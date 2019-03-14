@@ -2,12 +2,16 @@ package be.ehb.demomaps;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -30,7 +34,7 @@ import static be.ehb.demomaps.model.Hoofdstad.Continent.AFRIKA;
 import static be.ehb.demomaps.model.Hoofdstad.Continent.EUROPA;
 import static be.ehb.demomaps.model.Hoofdstad.Continent.OCEANIE;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPolygonClickListener, GoogleMap.OnMarkerClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPolygonClickListener, GoogleMap.OnMarkerClickListener, GoogleMap.OnInfoWindowClickListener {
     // Magic numbers are bad mkay
     private final int REQUEST_LOCATION = 42;
     private GoogleMap mMap;
@@ -63,9 +67,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         mMap.setOnPolygonClickListener(this);
         mMap.setOnMarkerClickListener(this);
+        mMap.setOnInfoWindowClickListener(this);
         setupCamera();
         addMarkers();
         startLocationUpdates();
+
+        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null;
+            }
+
+            @Override
+            public View getInfoContents(Marker marker) {
+                View myContentView = getLayoutInflater().inflate(R.layout.info_window, null,false);
+                Hoofdstad current =(Hoofdstad)marker.getTag();
+                TextView tvTitle = myContentView.findViewById(R.id.tv_info_window);
+                tvTitle.setText(current.getCityName());
+
+                ImageView iv = myContentView.findViewById(R.id.iv_info_window);
+                iv.setImageResource(current.getDrawableId());
+
+                return  myContentView;
+            }
+        });
         // Add a marker in Sydney and move the camera
      /*   LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
@@ -119,12 +144,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     break;
 
             }
-            mMap.addMarker(
+           Marker m= mMap.addMarker(
                     new MarkerOptions()
                             .title(stad.getCityName())
                             .icon(BitmapDescriptorFactory.defaultMarker(hue))
                             .position(stad.getCoordinate())
             );
+            m.setTag(stad);
 
         }
     }
@@ -165,5 +191,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public boolean onMarkerClick(Marker marker) {
         Toast.makeText(getApplicationContext(), marker.getTitle(), Toast.LENGTH_LONG).show();
         return false;
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        Intent detailsIntent = new Intent(getApplicationContext(),DetailsHoofdstadActivity.class);
+        detailsIntent.putExtra("stad",(Hoofdstad)marker.getTag());
+        startActivity(detailsIntent);
     }
 }
